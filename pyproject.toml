@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "peopleflowsimulator"
+version = "0.1.0"
+description = ""
+authors = ["Kuchiki <ykuchiki0827@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+numpy = "^1.26.4"
+matplotlib = "^3.8.4"
+replicate = "^0.25.2"
+groq = "^0.5.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
