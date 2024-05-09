@@ -1,4 +1,5 @@
 # LLM base AI Agent
+Please replace API key with yours
 
 ## File Explanation
 - simpleSFM.py 
