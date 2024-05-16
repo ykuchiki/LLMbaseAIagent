@@ -3,4 +3,4 @@
 __pycache__/
 .git/
 .DS_Store
-APIkey.txt
+APIkey.py

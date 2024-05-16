@@ -5,7 +5,7 @@ Please replace API key with yours
 - simpleSFM.py 
   - simple Social Force Model
 - llmagent.py
-  - LLM base AI Agent
+  - LLM base AI Agentl
 - main.py
   - for running
 
