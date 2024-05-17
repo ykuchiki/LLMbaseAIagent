@@ -1,5 +1,6 @@
 # LLM base AI Agent
-Please replace API key with yours
+Please replace API key with yours  
+You can get API key from [this site](https://console.groq.com/playground)
 
 ## File Explanation
 - simpleSFM.py 

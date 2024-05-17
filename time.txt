@@ -20,3 +20,9 @@ LLM generation took 128.1517150402069 seconds
 load_projection_module function took 0.04412388801574707 seconds
 LLM generation took 127.64743280410767 seconds
 load_projection_module function took 0.03410482406616211 seconds
+LLM generation took 747.2939078807831 seconds
+load_projection_module function took 0.06956195831298828 seconds
+LLM generation took 5153.235969781876 seconds
+load_projection_module function took 0.05239510536193848 seconds
+LLM generation took 1062.7291231155396 seconds
+load_projection_module function took 0.05654597282409668 seconds

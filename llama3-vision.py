@@ -22,8 +22,9 @@ def tokenizer_image_token(prompt, tokenizer, image_token_index=-200):
     """
     start_time = time.time()
     with codecs.open("check.txt", "w", "utf-8") as f:
-        f.write("prompt\n")
+        f.write("prompt文\n")
         f.write(prompt)
+        f.write("\n")
     prompt_chunks = prompt.split("<image>")  # おそらくテキスト内のどこに画像データがあるかのマーカー
     tokenized_chunks = [tokenizer(chunk).input_ids for chunk in prompt_chunks]
     input_ids = tokenized_chunks[0]
@@ -35,8 +36,10 @@ def tokenizer_image_token(prompt, tokenizer, image_token_index=-200):
     with codecs.open("check.txt", "a", "utf-8") as f:
         f.write("input_ids\n")
         f.write(str(input_ids))
+        f.write("\n")
         f.write("torch.tensor(input_ids, dtype=torch.long)\n")
         f.write(str(torch.tensor(input_ids, dtype=torch.long)))
+        f.write("\n")
     end_time = time.time()  # 計測終了
     with open(filename, "w") as f:
         print(f"tokenizer_image_token function took {end_time - start_time} seconds", file=f)
@@ -46,7 +49,7 @@ def tokenizer_image_token(prompt, tokenizer, image_token_index=-200):
 def process_tensor(input_ids, image_features, embedding_layer):
     """
     テキストデータと画像データを組み合わせて処理するための前処理
-    :param input_ids: テキストを機会処理可能な数値のシーケンスに変換したもの
+    :param input_ids: テキストを機械処理可能な数値のシーケンスに変換したもの
     :param image_features:
     :param embedding_layer:
     :return:
@@ -58,10 +61,24 @@ def process_tensor(input_ids, image_features, embedding_layer):
     # -200をのぞいて，input_idsを見つかったインデックスで分割する，-200自体はどちらにも含まれない
     input_ids_1 = input_ids[:, :split_index]
     input_ids_2 = input_ids[:, split_index + 1:]
+    with codecs.open("check.txt", "a", "utf-8") as f:
+        f.write("input_ids_1(テキストを機械処理可能な数値シーケンスに変換したもの)\n")
+        f.write(str(input_ids_1))
+        f.write("\n")
+        f.write("input_ids_2(テキストを機械処理可能な数値シーケンスに変換したもの)\n")
+        f.write(str(input_ids_2))
+        f.write("\n")
 
     # input_idsを埋め込み(ベクトル表現)に変換
     embeddings_1 = embedding_layer(input_ids_1)
     embeddings_2 = embedding_layer(input_ids_2)
+    with codecs.open("check.txt", "a", "utf-8") as f:
+        f.write("embeddings_1(input_ids_1を埋め込みに変換したもの)\n")
+        f.write(str(embeddings_1))
+        f.write("\n")
+        f.write("embeddings_2(input_ids_2を埋め込みに変換したもの)\n")
+        f.write(str(embeddings_2))
+        f.write("\n")
 
     device = image_features.device
     token_embeddings_part1 = embeddings_1.to(device)
@@ -74,6 +91,7 @@ def process_tensor(input_ids, image_features, embedding_layer):
     with codecs.open("check.txt", "a", "utf-8") as f:
         f.write("concatenated_embedding -> [token_embeddings_part1, image_features, token_embeddings_part2]\n")
         f.write(str(concatenated_embeddings))
+        f.write("\n")
 
     # アテンションマスクの作成，全てのトークンに注目してる．．．
     attention_mask = torch.ones(
@@ -82,6 +100,7 @@ def process_tensor(input_ids, image_features, embedding_layer):
     with codecs.open("check.txt", "a", "utf-8") as f:
         f.write("attention_mask\n")
         f.write(str(attention_mask))
+        f.write("\n")
     end_time = time.time()  # 計測終了
     with open(filename, "a") as f:
         print(f"process_tensor function took {end_time - start_time} seconds", file=f)
@@ -234,6 +253,9 @@ def answer_question(
             "streamer": streamer,
             "pad_token_id": tokenizer.eos_token_id
         }
+
+        torch.cuda.empty_cache()
+        torch.cuda.memory_summary(device=None, abbreviated=False)
 
         while True:
             print("assistant: ")
