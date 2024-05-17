@@ -227,14 +227,31 @@ def answer_question(
         ).to(device)
 
         image_inputs = image_inputs["pixel_values"].squeeze(0)
+        with codecs.open("check.txt", "a", "utf-8") as f:
+            f.write("image_inputs　画像データを前処理して画像認識モデルに入力できる形式に変換したもの，processorインスタンスにより生成\n")
+            f.write(str(image_inputs))
+            f.write("\n")
+
 
         image_forward_outs = vision_model(
             image_inputs.to(device=device, dtype=torch.float16).unsqueeze(0),
             output_hidden_states=True,
         )
+        with codecs.open("check.txt", "a", "utf-8") as f:
+            f.write("image_forward_outs 認識モデルに画像データを入力した後の出力\n")
+            f.write(str(image_forward_outs))
+            f.write("\n")
 
         image_features = image_forward_outs.hidden_states[-2]
+        with codecs.open("check.txt", "a", "utf-8") as f:
+            f.write("image_features image_forward_outsの後ろから2層目の出力だけを抽出したもの\n")
+            f.write(str(image_features))
+            f.write("\n")
         projected_embeddings = projection_module(image_features).to(device)
+        with codecs.open("check.txt", "a", "utf-8") as f:
+            f.write("projected_embeddings 画像の特徴ベクトル(image_features)を別の埋め込み空間にマッピングし，テキストの埋め込みベクトルと結合できるようにする\n")
+            f.write(str(projected_embeddings))
+            f.write("\n")
 
         embedding_layer = model.get_input_embeddings()
 
