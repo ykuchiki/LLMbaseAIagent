@@ -3,13 +3,14 @@ import matplotlib.pyplot as plt
 from groq import Groq
 from apikey import GROG_API_KEY
 
+from multimodalllm import GetOutput
 
 client = Groq(
     api_key=GROG_API_KEY,
 )
 
 
-class people_flow1:
+class SimulateLLMAgent:
     def __init__(self, people_num, wall_x, wall_y, dt, obstacle_num=3):
         self.people_num = people_num
         self.wall_x = wall_x
@@ -71,18 +72,34 @@ class people_flow1:
                 direction = self.direction
             else:
                 prompt = self.create_prompt()
-                chat_completion = client.chat.completions.create(
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ],
-                    model="mixtral-8x7b-32768",
-                )
+                # chat_completion = client.chat.completions.create(
+                #     messages=[
+                #         {
+                #             "role": "user",
+                #             "content": prompt
+                #         }
+                #     ],
+                #     model="mixtral-8x7b-32768",
+                # )
                 # print("prompt: ", prompt)
-                direction = chat_completion.choices[0].message.content
-            print(direction)
+                # direction = chat_completion.choices[0].message.content
+
+                # シミュレーションの状態を画像として保存
+                fig, ax = plt.subplots
+                ax.set_xlim(0, self.wall_x)
+                ax.set_ylim(0, self.wall_y)
+                ax.scatter(self.positions[:, 0], self.positions[:, 1], color='blue')
+                ax.scatter(self.target[0], self.target[1], color='red', s=100)
+                for start, end in self.obstacles:
+                    ax.plot([start[0], end[0]], [start[1], end[1]], color="green")
+                plt.savefig("current_state.png")
+                plt.close()
+
+                # マルチモーダルLLMから方向を取得
+                get_output = GetOutput(prompt=prompt, env=None)
+                direction = get_output.answer_question(image_path="current_state.png")
+                print(direction)
+
             if direction:  # 空でない場合のみ処理を行う
                 original_position = self.positions[i].copy()
                 if 'up' in direction and self.positions[i][1] < self.wall_y:
