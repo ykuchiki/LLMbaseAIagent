@@ -12,6 +12,7 @@ client = Groq(
 
 class SimulateLLMAgent:
     def __init__(self, people_num, wall_x, wall_y, dt, obstacle_num=3):
+        print("Initializing SimulateLLMAgent...")
         self.people_num = people_num
         self.wall_x = wall_x
         self.wall_y = wall_y
@@ -23,7 +24,8 @@ class SimulateLLMAgent:
         self.direction = None  # ユーザーの入力方向
         self.control_mode = "manual"  # 制御モード LLM or manual
         self.exit_simulation = False
-        self.get_output = GetOutput(prompt=self.create_prompt(), env=None)
+        self.get_output = GetOutput(prompt=self.create_prompt())
+        print("SimulateLLMAgent initialized.")
 
     def generate_random_points(self):
         while True:

@@ -18,9 +18,8 @@ filename = "time.txt"
 checkfile = "check.txt"
 
 class GetOutput:
-    def __init__(self, prompt, env):
+    def __init__(self, prompt):
         self.prompt = prompt
-        self.env = env
         self.tokenizer, self.model, self.vision_model, self.processor = self.initialize_models()
         self.projection_module = self.load_projection_module()
 
@@ -120,23 +119,29 @@ class GetOutput:
         start_time = time.time()
         device = "mps" if torch.backends.mps.is_available() else "cuda"
 
-        # モデルの量子化設定(数値表現を4bitに圧縮)し，メモリ消費を抑えて計算効率を向上させる
+        print("Initializing models...")
         bnb_config = BitsAndBytesConfig(
-            load_in_4bit=False,  # 量子化をとりあえず無効にする
+            load_in_4bit=False,
             bnb_4bit_compute_dtype=torch.float16
         )
 
-        # 事前訓練済みのトークナイザーをロード, use_fast=TrueでRust実装を使用，トークナイゼーションの速度を向上させる
+        print("Loading tokenizer...")
         tokenizer = AutoTokenizer.from_pretrained(
             "unsloth/llama-3-8b-Instruct", use_fast=True
         )
 
-        model = LlamaForCausalLM.from_pretrained(
-            "unsloth/llama-3-8b-Instruct",
-            torch_dtype=torch.float16,
-            device_map="auto",
-            # quantization_config=bnb_config,
-        )
+        print("Loading model...")
+        model = None
+        try:
+            model = LlamaForCausalLM.from_pretrained(
+                "unsloth/llama-3-8b-Instruct",
+                torch_dtype=torch.float16,
+                device_map="auto",
+                # quantization_config=bnb_config,
+            )
+        except Exception as e:
+            print(f"Error loading model: {e}")
+            sys.exit(1)
 
         for param in model.base_model.parameters():
             param.requires_grad = False  # ファインニューニング中にパラメータが更新されないように設定
@@ -250,8 +255,9 @@ class GetOutput:
                 "pad_token_id": self.tokenizer.eos_token_id
             }
 
-            torch.cuda.empty_cache()
-            torch.cuda.memory_summary(device=None, abbreviated=False)
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.memory_summary(device=None, abbreviated=False)
 
             print("assistant: ")
             generated_ids = self.model.generate(
