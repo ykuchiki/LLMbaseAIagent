@@ -26,3 +26,5 @@ LLM generation took 5153.235969781876 seconds
 load_projection_module function took 0.05239510536193848 seconds
 LLM generation took 1062.7291231155396 seconds
 load_projection_module function took 0.05654597282409668 seconds
+initialize_models function took 20.6264328956604 seconds
+load_projection_module function took 0.4283270835876465 seconds

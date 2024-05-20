@@ -23,13 +23,14 @@ class SimulateLLMAgent:
         self.direction = None  # ユーザーの入力方向
         self.control_mode = "manual"  # 制御モード LLM or manual
         self.exit_simulation = False
+        self.get_output = GetOutput(prompt=self.create_prompt(), env=None)
 
     def generate_random_points(self):
         while True:
             start_point = np.random.rand(2) * [self.wall_x, self.wall_y]
             end_point = np.random.rand(2) * [self.wall_x, self.wall_y]
             distance = np.abs(end_point - start_point).sum()
-            if 60 <= distance <= 90:  # マンハッタン距離が3以上5以下の障害物
+            if 60 <= distance <= 90:  # マンハッタン距離が60以上90以下の障害物
                 return start_point, end_point
 
     def generate_obstacles(self, obstacle_num):
@@ -66,7 +67,7 @@ class SimulateLLMAgent:
         # print(np.linalg.norm(point - projection))
         return np.linalg.norm(point - projection)
 
-    def update_position_based_on_prompt(self):
+    def update_position_based_on_prompt(self, ax):
         for i in range(self.people_num):
             if self.control_mode == 'manual' and i == self.user_controlled_agent:
                 direction = self.direction
@@ -85,7 +86,7 @@ class SimulateLLMAgent:
                 # direction = chat_completion.choices[0].message.content
 
                 # シミュレーションの状態を画像として保存
-                fig, ax = plt.subplots
+                ax.clear()
                 ax.set_xlim(0, self.wall_x)
                 ax.set_ylim(0, self.wall_y)
                 ax.scatter(self.positions[:, 0], self.positions[:, 1], color='blue')
@@ -93,11 +94,9 @@ class SimulateLLMAgent:
                 for start, end in self.obstacles:
                     ax.plot([start[0], end[0]], [start[1], end[1]], color="green")
                 plt.savefig("current_state.png")
-                plt.close()
 
                 # マルチモーダルLLMから方向を取得
-                get_output = GetOutput(prompt=prompt, env=None)
-                direction = get_output.answer_question(image_path="current_state.png")
+                direction = self.get_output.answer_question(image_path="current_state.png")
                 print(direction)
 
             if direction:  # 空でない場合のみ処理を行う
@@ -142,8 +141,7 @@ class SimulateLLMAgent:
         fig.canvas.mpl_connect('key_press_event', self.on_key_press)
         while not self.exit_simulation:
             # self.__start_paint()
-            self.update_position_based_on_prompt()
-            ax.clear()
+            self.update_position_based_on_prompt(ax)
             ax.set_xlim(0, self.wall_x)
             ax.set_ylim(0, self.wall_y)
             # Draw agents
