@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from groq import Groq
 from apikey import GROG_API_KEY
 
+
 client = Groq(
     api_key=GROG_API_KEY,
 )
@@ -43,19 +44,14 @@ class people_flow1:
             formatted_obstacles.append(f"({pair[0][0]:.2f}, {pair[0][1]:.2f}) to ({pair[1][0]:.2f}, {pair[1][1]:.2f})")
         return "; ".join(formatted_obstacles)
 
-    def create_prompt(self, i):
-        obstacles_text = self.format_obstacles_for_prompt()
-        prompt = (
+    def create_prompt(self):
+        return (
             "You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:\n"
             "- The agent must reach the target.\n"
             "- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.\n"
-            "- Coordinates are given in (x, y) format, where x increases to the right and y increases upward.\n"
-            f"Current position: (x, y) = ({self.positions[i][0]}, {self.positions[i][1]})\n"
-            f"Target position: (x, y) = ({self.target[0]}, {self.target[1]})\n"
-            f"Obstacles are located at: [{obstacles_text}]\n"
-            "Choose one word: 'up', 'down', 'left', or 'right'.\n"
+            "- The agent's color is blue, the target's color is red, and obstacles' color is green.\n"
+            "Choose one word: 'up', 'down', 'left', or 'right'."
         )
-        return prompt
 
     def point_to_line_distance(self, point, line_start, line_end):
         """入力された点と線分の最短距離を計算"""
@@ -74,7 +70,7 @@ class people_flow1:
             if self.control_mode == 'manual' and i == self.user_controlled_agent:
                 direction = self.direction
             else:
-                prompt = self.create_prompt(i)
+                prompt = self.create_prompt()
                 chat_completion = client.chat.completions.create(
                     messages=[
                         {
