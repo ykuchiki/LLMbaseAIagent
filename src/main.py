@@ -1,5 +1,6 @@
 from simpleSFM import people_flow
 from llmagent import people_flow1
+from multimodal.multimodalagent import SimulateLLMAgent
 
 people_num = 1
 v_arg = [6,2]
@@ -24,5 +25,7 @@ model = people_flow(people_num, v_arg, repul_h, repul_m, target, R, min_p, p_arg
                     save_format=save_format, save_params=save_params)
 model2 = people_flow1(people_num, wall_x, wall_y, dt2, obstacle_num)
 
-#maps = model.simulate()
-model2.simulate()
+model3 = SimulateLLMAgent(people_num, wall_x, wall_y, dt2, obstacle_num)
+
+# maps = model.simulate()
+model3.simulate()

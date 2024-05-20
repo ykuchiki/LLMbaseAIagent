@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from groq import Groq
 from apikey import GROG_API_KEY
 
-from multimodalllm import GetOutput
+from multimodalsimu import GetOutput
 
 client = Groq(
     api_key=GROG_API_KEY,
