@@ -176,7 +176,7 @@ class GetOutput:
         return self.answer_question(image_path, self.prompt)
 
     def ask_reason(self, direction):
-        reason_prompt = f"Why did you choose {direction}"
+        reason_prompt = f"Why did you choose {direction}. Answer the reason why."
         return self.answer_question(None, reason_prompt)
 
     def answer_question(self, image_path, prompt):
