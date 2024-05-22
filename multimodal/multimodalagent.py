@@ -24,7 +24,7 @@ class SimulateLLMAgent:
         self.obstacles = self.generate_obstacles(obstacle_num)
         self.user_controlled_agent = 0  # 入力で操作するエージェントのインデックス
         self.direction = None  # ユーザーの入力方向
-        self.control_mode = "manual"  # 制御モード LLM or manual
+        self.control_mode = "LLM"  # 制御モード LLM or manual
         self.exit_simulation = False
         self.get_output = GetOutput(prompt=self.create_prompt())
         self.log_file = "simulation_log.txt"
