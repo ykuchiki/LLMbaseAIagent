@@ -1,0 +1,16 @@
+Direction: left<|eot_id|>
+Reason: It seems like you accidentally typed "left" instead
+Direction: left<|eot_id|>
+Reason: It seems like you accidentally typed "left" instead
+Direction: left<|eot_id|>
+Reason: It seems like you accidentally typed "left" instead
+Direction: left<|eot_id|>
+Reason: It seems like you accidentally typed "left" instead
+Direction: left<|eot_id|>
+Reason: It seems like you accidentally typed "left" instead
+Direction: left<|eot_id|>
+Direction: left<|eot_id|>
+Direction: left<|eot_id|>
+Reason: It seems like you accidentally typed "left" instead of a question or a statement. Is there something you'd like to talk about or ask? I'm here to help!<|eot_id|>
+Direction: left<|eot_id|>
+Reason: It seems like you accidentally typed "left" instead of a question or a statement. Is there something you'd like to talk about or ask? I'm here to help!<|eot_id|>

@@ -9,6 +9,8 @@ client = Groq(
     api_key=GROG_API_KEY,
 )
 
+log_file_for_replay = "replay_log.txt"
+
 
 class SimulateLLMAgent:
     def __init__(self, people_num, wall_x, wall_y, dt, obstacle_num=3):
@@ -25,7 +27,13 @@ class SimulateLLMAgent:
         self.control_mode = "manual"  # 制御モード LLM or manual
         self.exit_simulation = False
         self.get_output = GetOutput(prompt=self.create_prompt())
+        self.log_file = "simulation_log.txt"
+        self.replay_file = "replay_log.txt"
         print("SimulateLLMAgent initialized.")
+
+    def log(self, filename, message):
+        with open(filename, "a") as log_file:
+            log_file.write(message + "\n")
 
     def generate_random_points(self):
         while True:
@@ -53,7 +61,9 @@ class SimulateLLMAgent:
             "You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:\n"
             "- The agent must reach the target.\n"
             "- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.\n"
+            "- The agent can not go through obstacles."
             "- The agent's color is blue, the target's color is red, and obstacles' color is green.\n"
+            "- Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target."
             "Choose one word: 'up', 'down', 'left', or 'right'."
         )
 
@@ -98,8 +108,11 @@ class SimulateLLMAgent:
                 plt.savefig("current_state.png")
 
                 # マルチモーダルLLMから方向を取得
-                direction = self.get_output.answer_question(image_path="current_state.png")
-                print(direction)
+                direction = self.get_output.answer_question(image_path="current_state.png", prompt=prompt)
+                self.log(self.log_file, f"Direction: {direction}")
+                reason= self.get_output.answer_question(None, direction)
+                self.log(self.log_file, f"Reason: {reason}")
+                # print("wow", direction)
 
             if direction:  # 空でない場合のみ処理を行う
                 original_position = self.positions[i].copy()
@@ -115,6 +128,9 @@ class SimulateLLMAgent:
                 # 衝突チェック
                 if any(self.point_to_line_distance(self.positions[i], obs[0], obs[1]) < 3 for obs in self.obstacles):
                     self.positions[i] = original_position
+
+                # ログに位置を記録
+                self.log(self.replay_file, f"Agent {i} position: {self.positions[i]}")
 
             if self.control_mode == "manual":
                 self.direction = None
@@ -141,7 +157,11 @@ class SimulateLLMAgent:
         plt.ion()
         fig, ax = plt.subplots()
         fig.canvas.mpl_connect('key_press_event', self.on_key_press)
+        self.log(self.replay_file, f"Initial positions: {self.positions}")
+        self.log(self.replay_file, f"Target position: {self.target}")
+        self.log(self.replay_file, f"Obstacles: {self.obstacles}")
         while not self.exit_simulation:
+            ax.clear()
             # self.__start_paint()
             self.update_position_based_on_prompt(ax)
             ax.set_xlim(0, self.wall_x)
@@ -165,3 +185,31 @@ class SimulateLLMAgent:
         print("シミュレーションを終了します")
         plt.ioff()
         plt.close()
+
+    def replay(self):
+        with open(self.replay_file, "r") as log_file:
+            log_data = log_file.readlines()
+
+        # eval() -> 文字列をnumpyに変換
+        # .split(":")[1]指定した文字列で分割して二番目の要素を取得
+        # .strip() -> 空白を取り除く
+        initial_positions = eval(log_data[0].split(":")[1].strip())
+        target_position = eval(log_data[1].split(":")[1].strip())
+        obstacles = eval(log_data[2].split(":")[1].strip())
+
+        fig, ax = plt.subplots()
+        ax.set_xlim(0, self.wall_x)
+        ax.set_ylim(0, self.wall_y)
+        ax.scatter(initial_positions[:, 0], initial_positions[:, 1], color='blue')
+        ax.scatter(target_position[0], target_position[1], color='red', s=100)
+        for start, end in obstacles:
+            ax.plot([start[0], end[0]], [start[1], end[1]], color="green")
+
+        for line in log_data[3:]:
+            if line.startswith("Agent"):
+                agent_index = int(line.split(" ")[1])
+                position = eval(line.split(":")[1].strip())
+                ax.scatter(position[0], position[1], color='blue')
+            plt.pause(0.05)
+
+        plt.show()

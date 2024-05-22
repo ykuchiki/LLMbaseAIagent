@@ -1,2 +1,2 @@
-tokenizer_image_token function took 0.018758296966552734 seconds
-process_tensor function took 3.643247127532959 seconds
+tokenizer_image_token function took 0.06003522872924805 seconds
+process_tensor function took 4.275264024734497 seconds

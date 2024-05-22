@@ -131,7 +131,6 @@ class GetOutput:
         )
 
         print("Loading model...")
-        model = None
         try:
             model = LlamaForCausalLM.from_pretrained(
                 "unsloth/llama-3-8b-Instruct",
@@ -173,12 +172,18 @@ class GetOutput:
             print(f"load_projection_module function took {end_time - start_time} seconds", file=f)
         return projection_module
 
-    def answer_question(self, image_path):
+    def ask_direction(self, image_path):
+        return self.answer_question(image_path, self.prompt)
+
+    def ask_reason(self, direction):
+        reason_prompt = f"Why did you choose {direction}"
+        return self.answer_question(None, reason_prompt)
+
+    def answer_question(self, image_path, prompt):
         device = "mps" if torch.backends.mps.is_available() else "cuda"
-        image = Image.open(image_path).convert("RGB")  # 画像をRGBで読み込む
         self.tokenizer.eos_token = "<|eot_id|>"  # テキストデータの終わりを示すためのEnd of Sequenceトークンの設定
         t_start_time = time.time()
-        q = self.prompt
+        q = prompt
 
         # try:
         #     start_time = time.time()
@@ -202,46 +207,53 @@ class GetOutput:
         streamer = TextStreamer(self.tokenizer, skip_prompt=True, skip_special_tokens=True)
 
         with torch.inference_mode():
-            image_inputs = self.processor(
-                images=[image],
-                return_tensors="pt",
-                do_resize=True,
-                size={"height": 384, "width": 384}
-            ).to(device)
+            if image_path:
+                image = Image.open(image_path).convert("RGB")  # 画像をRGBで読み込む
+                image_inputs = self.processor(
+                    images=[image],
+                    return_tensors="pt",
+                    do_resize=True,
+                    size={"height": 384, "width": 384}
+                ).to(device)
 
-            image_inputs = image_inputs["pixel_values"].squeeze(0)
-            with codecs.open(checkfile, "a", "utf-8") as f:
-                f.write(
-                    "image_inputs　画像データを前処理して画像認識モデルに入力できる形式に変換したもの，processorインスタンスにより生成\n")
-                f.write(str(image_inputs))
-                f.write("\n")
+                image_inputs = image_inputs["pixel_values"].squeeze(0)
+                with codecs.open(checkfile, "a", "utf-8") as f:
+                    f.write(
+                        "image_inputs　画像データを前処理して画像認識モデルに入力できる形式に変換したもの，processorインスタンスにより生成\n")
+                    f.write(str(image_inputs))
+                    f.write("\n")
 
-            image_forward_outs = self.vision_model(
-                image_inputs.to(device=device, dtype=torch.float16).unsqueeze(0),
-                output_hidden_states=True,
-            )
-            with codecs.open(checkfile, "a", "utf-8") as f:
-                f.write("image_forward_outs 認識モデルに画像データを入力した後の出力\n")
-                f.write(str(image_forward_outs))
-                f.write("\n")
+                image_forward_outs = self.vision_model(
+                    image_inputs.to(device=device, dtype=torch.float16).unsqueeze(0),
+                    output_hidden_states=True,
+                )
+                with codecs.open(checkfile, "a", "utf-8") as f:
+                    f.write("image_forward_outs 認識モデルに画像データを入力した後の出力\n")
+                    f.write(str(image_forward_outs))
+                    f.write("\n")
 
-            image_features = image_forward_outs.hidden_states[-2]
-            with codecs.open(checkfile, "a", "utf-8") as f:
-                f.write("image_features image_forward_outsの後ろから2層目の出力だけを抽出したもの\n")
-                f.write(str(image_features))
-                f.write("\n")
-            projected_embeddings = self.projection_module(image_features).to(device)
-            with codecs.open(checkfile, "a", "utf-8") as f:
-                f.write(
-                    "projected_embeddings 画像の特徴ベクトル(image_features)を別の埋め込み空間にマッピングし，テキストの埋め込みベクトルと結合できるようにする\n")
-                f.write(str(projected_embeddings))
-                f.write("\n")
+                image_features = image_forward_outs.hidden_states[-2]
+                with codecs.open(checkfile, "a", "utf-8") as f:
+                    f.write("image_features image_forward_outsの後ろから2層目の出力だけを抽出したもの\n")
+                    f.write(str(image_features))
+                    f.write("\n")
+                projected_embeddings = self.projection_module(image_features).to(device)
+                with codecs.open(checkfile, "a", "utf-8") as f:
+                    f.write(
+                        "projected_embeddings 画像の特徴ベクトル(image_features)を別の埋め込み空間にマッピングし，テキストの埋め込みベクトルと結合できるようにする\n")
+                    f.write(str(projected_embeddings))
+                    f.write("\n")
 
-            embedding_layer = self.model.get_input_embeddings()
+                embedding_layer = self.model.get_input_embeddings()
 
-            new_embeds, attn_mask = self.process_tensor(
-                input_ids, projected_embeddings, embedding_layer
-            )
+                new_embeds, attn_mask = self.process_tensor(
+                    input_ids, projected_embeddings, embedding_layer
+                )
+            else:
+                embedding_layer = self.model.get_input_embeddings()
+                new_embeds = embedding_layer(input_ids)
+                attn_mask = torch.ones(new_embeds.shape[:2], dtype=torch.long, device=device)
+
             # device = model.device
             attn_mask = attn_mask.to(device)
             new_embeds = new_embeds.to(device)
@@ -249,7 +261,7 @@ class GetOutput:
             model_kwargs = {
                 "do_sample": True,
                 "temperature": 0.2,
-                "max_new_tokens": 10,
+                "max_new_tokens": 200,
                 "use_cache": True,
                 "streamer": streamer,
                 "pad_token_id": self.tokenizer.eos_token_id
@@ -260,6 +272,7 @@ class GetOutput:
                 torch.cuda.memory_summary(device=None, abbreviated=False)
 
             print("assistant: ")
+            # streamerはgenerateメソッド内で生成されたテキストをリアルタイムで出力するようになってる
             generated_ids = self.model.generate(
                 inputs_embeds=new_embeds, attention_mask=attn_mask, **model_kwargs
             )[0]
