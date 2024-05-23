@@ -63,6 +63,7 @@ class SimulateLLMAgent:
             "- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.\n"
             "- The agent can not go through obstacles."
             "- The agent's color is blue, the target's color is red, and obstacles' color is green.\n"
+            "- Don't get too close to obstacles"
             "- Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target."
             "Choose one word: 'up', 'down', 'left', or 'right'."
         )
@@ -110,7 +111,7 @@ class SimulateLLMAgent:
                 # マルチモーダルLLMから方向を取得
                 direction = self.get_output.answer_question(image_path="current_state.png", prompt=prompt)
                 self.log(self.log_file, f"Direction: {direction}")
-                reason= self.get_output.answer_question(None, direction)
+                reason = self.get_output.answer_question(None, direction)
                 self.log(self.log_file, f"Reason: {reason}")
                 # print("wow", direction)
 

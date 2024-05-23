@@ -27,7 +27,7 @@ class people_flow1:
             start_point = np.random.rand(2) * [self.wall_x, self.wall_y]
             end_point = np.random.rand(2) * [self.wall_x, self.wall_y]
             distance = np.abs(end_point - start_point).sum()
-            if 60 <= distance <= 90:  # マンハッタン距離が3以上5以下の障害物
+            if 60 <= distance <= 90:  # マンハッタン距離が60以上90以下の障害物
                 return start_point, end_point
 
     def generate_obstacles(self, obstacle_num):
@@ -49,10 +49,10 @@ class people_flow1:
             "You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:\n"
             "- The agent must reach the target.\n"
             "- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.\n"
-            "- Coordinates are given in (x, y) format, where x increases to the right and y increases upward.\n"
+            "- The given coordinates are in the format (x, y), where the x-coordinate increases as you move to the right, and the y-coordinate increases as you move upward. \n"
             f"Current position: (x, y) = ({self.positions[i][0]}, {self.positions[i][1]})\n"
             f"Target position: (x, y) = ({self.target[0]}, {self.target[1]})\n"
-            f"Obstacles are located at: [{obstacles_text}]\n"
+            # f"Obstacles are located at: [{obstacles_text}]\n"
             "Choose one word: 'up', 'down', 'left', or 'right'.\n"
         )
         return prompt
@@ -82,11 +82,24 @@ class people_flow1:
                             "content": prompt
                         }
                     ],
-                    model="mixtral-8x7b-32768",
+                    model="llama3-70b-8192",
                 )
                 # print("prompt: ", prompt)
                 direction = chat_completion.choices[0].message.content
-            print(direction)
+                print(direction)
+
+                # chat_completion1 = client.chat.completions.create(
+                #     messages=[
+                #         {
+                #             "role": "user",
+                #             "content": f"Why did you choose the {direction}. Answer the reason why."
+                #         }
+                #     ],
+                #     model="llama3-8b-8192",
+                # )
+                # reason = chat_completion1.choices[0].message.content
+                # print(reason)
+
             if direction:  # 空でない場合のみ処理を行う
                 original_position = self.positions[i].copy()
                 if 'up' in direction and self.positions[i][1] < self.wall_y:
@@ -138,8 +151,8 @@ class people_flow1:
             # Draw target with a different color
             ax.scatter(self.target[0], self.target[1], color='red', s=100)  # Adjust size as needed
             # print(self.obstacles)
-            for start, end in self.obstacles:
-                ax.plot([start[0], end[0]], [start[1], end[1]], color="green")
+            # for start, end in self.obstacles:
+            #     ax.plot([start[0], end[0]], [start[1], end[1]], color="green")
             plt.pause(0.05)
 
             # 終了条件のチェック

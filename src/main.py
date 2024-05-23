@@ -21,11 +21,10 @@ save_params = [(30,30),1]
 obstacle_num = 6
 
 
-model = people_flow(people_num, v_arg, repul_h, repul_m, target, R, min_p, p_arg, wall_x, wall_y, in_target_d, dt,
-                    save_format=save_format, save_params=save_params)
+#model = people_flow(people_num, v_arg, repul_h, repul_m, target, R, min_p, p_arg, wall_x, wall_y, in_target_d, dt, save_format=save_format, save_params=save_params)
 model2 = people_flow1(people_num, wall_x, wall_y, dt2, obstacle_num)
 
-model3 = SimulateLLMAgent(people_num, wall_x, wall_y, dt2, obstacle_num)
+#model3 = SimulateLLMAgent(people_num, wall_x, wall_y, dt2, obstacle_num)
 
 # maps = model.simulate()
-model3.simulate()
+model2.simulate()

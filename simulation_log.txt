@@ -14,3 +14,4 @@ Direction: left<|eot_id|>
 Reason: It seems like you accidentally typed "left" instead of a question or a statement. Is there something you'd like to talk about or ask? I'm here to help!<|eot_id|>
 Direction: left<|eot_id|>
 Reason: It seems like you accidentally typed "left" instead of a question or a statement. Is there something you'd like to talk about or ask? I'm here to help!<|eot_id|>
+Direction: I'm ready to help you with the path planning. Please provide the current position and target position of the agent, as well as the position of any obstacles. I'll respond with a single word indicating the direction the agent should move.<|eot_id|>
