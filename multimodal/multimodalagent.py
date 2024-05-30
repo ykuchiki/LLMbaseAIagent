@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from groq import Groq
+
 from apikey import GROG_API_KEY
 
 from multimodal.multimodalsimu import GetOutput
@@ -9,11 +10,9 @@ client = Groq(
     api_key=GROG_API_KEY,
 )
 
-log_file_for_replay = "replay_log.txt"
-
 
 class SimulateLLMAgent:
-    def __init__(self, people_num, wall_x, wall_y, dt, obstacle_num=3):
+    def __init__(self, people_num, wall_x, wall_y, dt, obstacle_num=3, log_length=3):
         print("Initializing SimulateLLMAgent...")
         self.people_num = people_num
         self.wall_x = wall_x
@@ -26,14 +25,42 @@ class SimulateLLMAgent:
         self.direction = None  # ユーザーの入力方向
         self.control_mode = "LLM"  # 制御モード LLM or manual
         self.exit_simulation = False
-        self.get_output = GetOutput(prompt=self.create_prompt())
-        self.log_file = "simulation_log.txt"
-        self.replay_file = "replay_log.txt"
+        self.log_file = "log_simulation.txt"
+        self.replay_file = "log_replay.txt"
+        self.log_length = log_length * 2
+        self.logs = []
+        self.log_conversation = "log_conversation.txt"
+        self.log_prompt = "log_prompt.txt"
+        self.no_change_counter = {i: 0 for i in range(people_num)}  # 位置が変わらなかった回数をカウント
+        self.previous_direction = {i: None for i in range(people_num)}  # 各エージェントの前回の方向を記録
         print("SimulateLLMAgent initialized.")
 
     def log(self, filename, message):
         with open(filename, "a") as log_file:
             log_file.write(message + "\n")
+
+    def load_logs(self):
+        try:
+            with open(self.log_conversation, "r") as log_file:
+                logs = log_file.read()
+                return logs
+        except FileNotFoundError:
+            return ""
+
+    def save_prompt(self, prompt):
+        with open(self.log_prompt, "w") as log_file:
+            log_file.write("".join(prompt))
+
+    def add_log(self, log_entry):
+        # デバッグ出力
+        # print(f"Attempting to log: {log_entry}")
+
+        if len(self.logs) >= self.log_length:
+            self.logs.pop(0)
+        self.logs.append(log_entry)
+
+        with open(self.log_conversation, "w") as log_file:
+            log_file.write("".join(self.logs))
 
     def generate_random_points(self):
         while True:
@@ -50,24 +77,6 @@ class SimulateLLMAgent:
             obstacle_pairs.append((start_point, end_point))
         return obstacle_pairs
 
-    def format_obstacles_for_prompt(self):
-        formatted_obstacles = []
-        for pair in self.obstacles:
-            formatted_obstacles.append(f"({pair[0][0]:.2f}, {pair[0][1]:.2f}) to ({pair[1][0]:.2f}, {pair[1][1]:.2f})")
-        return "; ".join(formatted_obstacles)
-
-    def create_prompt(self):
-        return (
-            "You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:\n"
-            "- The agent must reach the target.\n"
-            "- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.\n"
-            "- The agent can not go through obstacles."
-            "- The agent's color is blue, the target's color is red, and obstacles' color is green.\n"
-            "- Don't get too close to obstacles"
-            "- Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target."
-            "Choose one word: 'up', 'down', 'left', or 'right'."
-        )
-
     def point_to_line_distance(self, point, line_start, line_end):
         """入力された点と線分の最短距離を計算"""
         line_vec = line_end - line_start
@@ -80,12 +89,46 @@ class SimulateLLMAgent:
         # print(np.linalg.norm(point - projection))
         return np.linalg.norm(point - projection)
 
+    def point_to_polygon_distance(self, point, polygon):
+        """点とポリゴンの最小の距離を計算"""
+        min_distance = float("inf")
+        for i in range(len(polygon)):
+            line_start = polygon[i]
+            line_end = polygon[(i + 1) % len(polygon)]
+            distance = self.point_to_line_distance(point, line_start, line_end)
+            if distance < min_distance:
+                min_distance = distance
+        return min_distance
+
+    def is_near_obstacle(self, position, obstacle, radius):
+        start_point, end_point = obstacle
+        return self.point_to_line_distance(position, start_point, end_point) <= radius
+
+    def create_prompt(self, i):
+        log_text = "Previous interactions:\n" + "\n".join(self.logs)
+        return (
+            "You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:\n"
+            "- The agent must reach the target.\n"
+            "- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.\n"
+            "- The agent can not go through obstacles."
+            "- The agent's color is blue, the target's color is red, and obstacles' color is green.\n"
+            "- Don't get too close to obstacles"
+            "- Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target."
+            "Choose one word: 'up', 'down', 'left', or 'right'."
+        )
+
     def update_position_based_on_prompt(self, ax):
         for i in range(self.people_num):
             if self.control_mode == 'manual' and i == self.user_controlled_agent:
                 direction = self.direction
             else:
-                prompt = self.create_prompt()
+                get_output = GetOutput(prompt=self.create_prompt(i))
+                prompt = self.create_prompt(i)
+                previous_logs = self.load_logs()
+                complete_prompt = f"Previous Logs:\n {previous_logs}\nCurrent Question:\n{prompt}"
+
+                # ============================================================
+                # GrogAPI使う時(テキストのみ)
                 # chat_completion = client.chat.completions.create(
                 #     messages=[
                 #         {
@@ -93,10 +136,11 @@ class SimulateLLMAgent:
                 #             "content": prompt
                 #         }
                 #     ],
-                #     model="mixtral-8x7b-32768",
+                #     model="llama3-70b-8192",
                 # )
                 # print("prompt: ", prompt)
                 # direction = chat_completion.choices[0].message.content
+                # ============================================================
 
                 # シミュレーションの状態を画像として保存
                 ax.clear()
@@ -108,11 +152,19 @@ class SimulateLLMAgent:
                     ax.plot([start[0], end[0]], [start[1], end[1]], color="green")
                 plt.savefig("current_state.png")
 
-                # マルチモーダルLLMから方向を取得
-                direction = self.get_output.answer_question(image_path="current_state.png", prompt=prompt)
-                self.log(self.log_file, f"Direction: {direction}")
-                reason = self.get_output.answer_question(None, direction)
-                self.log(self.log_file, f"Reason: {reason}")
+                # ============================================================
+                # Hugging faceのLlama3とSigLip，事前学習済みProjection Layerを用いたマルチモーダル
+                # direction = self.get_output.answer_question(image_path="current_state.png", prompt=prompt)
+                # reason = self.get_output.answer_question(None, direction)
+                # ============================================================
+
+                # ============================================================
+                # Llavaによるテキスト質問と画像入力のマルチモーダル
+
+                # ============================================================
+
+                # self.add_log(f"user: {prompt}\n")
+                # self.add_log(f"AI(You): {direction}\n\n\n\n")
                 # print("wow", direction)
 
             if direction:  # 空でない場合のみ処理を行う
@@ -127,11 +179,34 @@ class SimulateLLMAgent:
                     self.positions[i][0] = min(self.positions[i][0] + self.dt, self.wall_x)
 
                 # 衝突チェック
-                if any(self.point_to_line_distance(self.positions[i], obs[0], obs[1]) < 3 for obs in self.obstacles):
+                if any(self.point_to_polygon_distance(self.positions[i], np.array(obs)) < 3 for obs in self.obstacles):
                     self.positions[i] = original_position
 
                 # ログに位置を記録
                 self.log(self.replay_file, f"Agent {i} position: {self.positions[i]}")
+
+                # 複数回エージェントが移動できなかった時
+                if np.array_equal(self.positions[i], original_position) and self.control_mode == "LLM":
+                    print("no change counter:", self.no_change_counter)
+                    self.no_change_counter[i] += 1
+                    if self.no_change_counter[i] >= 2:  # n回の座標移動なし
+                        previous_direction = self.previous_direction[i]
+                        reason_prompt = (
+                            f"The agent's position has not changed for {self.no_change_counter[i]} updates. "
+                            f"Previous direction: {previous_direction}. "
+                            # f"Current environment: {obstacles_list}\n"  # ここ後で画像に置き換える
+                            "Why didn't the position change? Respond with a reason."
+                        )
+                        # ============================================================
+                        # 理由を聞く仕組みをここに作る
+
+                        # ============================================================
+
+                        # self.add_log(f"user: {reason_prompt}\n")
+                        # self.add_log(f"AI(You): {reason}\n\n\n\n")
+                        self.no_change_counter[i] = 0  # カウンタをリセット
+
+                self.previous_direction[i] = direction  # 前回の方向を記録
 
             if self.control_mode == "manual":
                 self.direction = None

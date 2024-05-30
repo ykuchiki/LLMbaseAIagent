@@ -28,7 +28,7 @@ class GetOutput:
         NLPモデルが画像データも認識できるようにするための前処理
         """
         start_time = time.time()
-        with codecs.open(checkfile, "w", "utf-8") as f:
+        with codecs.open(checkfile, "a", "utf-8") as f:
             f.write("prompt文\n")
             f.write(prompt)
             f.write("\n")
@@ -48,7 +48,7 @@ class GetOutput:
             f.write(str(torch.tensor(input_ids, dtype=torch.long)))
             f.write("\n")
         end_time = time.time()  # 計測終了
-        with open(filename, "w") as f:
+        with open(filename, "a") as f:
             print(f"tokenizer_image_token function took {end_time - start_time} seconds", file=f)
         return torch.tensor(input_ids, dtype=torch.long)
 
