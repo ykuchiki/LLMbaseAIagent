@@ -184,9 +184,9 @@ class people_flow1:
                     if self.no_change_counter[i] >= 2:  # 座標が指定回数以上変化がないとき
                         previous_direction = self.previous_direction[i]
                         reason_prompt = (
-                            f"The agent's position has not changed for {self.no_change_counter[i]} updates. "
-                            f"Current position: ({self.positions[i][0]:.2f}, {self.positions[i][1]:.2f}). "
-                            f"Previous direction: {previous_direction}. "
+                            f"The agent's position has not changed for {self.no_change_counter[i]} updates.\n"
+                            f"Current position: ({self.positions[i][0]:.2f}, {self.positions[i][1]:.2f}).\n"
+                            f"Previous direction: {previous_direction}.\n"
                             f"Nearby obstacles (x, y): {obstacles_list}\n"
                             "Why didn't the position change? Respond with a reason."
                         )

@@ -4,7 +4,8 @@ from groq import Groq
 
 from apikey import GROG_API_KEY
 
-from multimodal.multimodalsimu import GetOutput
+from multimodal.llava import Llava
+# from multimodal.llamasiglip import Llama3_SigLip
 
 client = Groq(
     api_key=GROG_API_KEY,
@@ -23,8 +24,9 @@ class SimulateLLMAgent:
         self.obstacles = self.generate_obstacles(obstacle_num)
         self.user_controlled_agent = 0  # 入力で操作するエージェントのインデックス
         self.direction = None  # ユーザーの入力方向
-        self.control_mode = "LLM"  # 制御モード LLM or manual
+        self.control_mode = "manual"  # 制御モード LLM or manual
         self.exit_simulation = False
+        self.llm_model = Llava()
         self.log_file = "log_simulation.txt"
         self.replay_file = "log_replay.txt"
         self.log_length = log_length * 2
@@ -33,6 +35,11 @@ class SimulateLLMAgent:
         self.log_prompt = "log_prompt.txt"
         self.no_change_counter = {i: 0 for i in range(people_num)}  # 位置が変わらなかった回数をカウント
         self.previous_direction = {i: None for i in range(people_num)}  # 各エージェントの前回の方向を記録
+
+        # log_conversation.txtの中身を空にする
+        with open(self.log_conversation, 'w') as log_file:
+            log_file.write('')
+
         print("SimulateLLMAgent initialized.")
 
     def log(self, filename, message):
@@ -110,19 +117,24 @@ class SimulateLLMAgent:
             "You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:\n"
             "- The agent must reach the target.\n"
             "- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.\n"
-            "- The agent can not go through obstacles."
+            "- Avoid any obstacles in the nearby area.\n"
             "- The agent's color is blue, the target's color is red, and obstacles' color is green.\n"
-            "- Don't get too close to obstacles"
-            "- Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target."
+            "- Don't get too close to obstacles\n"
+            "- Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target.\n"
+            f"Current position: (x, y) = ({self.positions[i][0]:.2f}, {self.positions[i][1]:.2f})\n"
+            f"Target position: (x, y) = ({self.target[0]:.2f}, {self.target[1]:.2f})\n"
             "Choose one word: 'up', 'down', 'left', or 'right'."
         )
 
     def update_position_based_on_prompt(self, ax):
+        original_size = 100  # 元のエージェントのサイズ
+        extraction_size = 100  # 抽出する範囲のサイズ（30の半径の両側）
+        scale_factor = self.wall_x / extraction_size  # 比率計算
+        adjusted_size = original_size * scale_factor  # サイズを比率に基づいて調整
         for i in range(self.people_num):
             if self.control_mode == 'manual' and i == self.user_controlled_agent:
                 direction = self.direction
             else:
-                get_output = GetOutput(prompt=self.create_prompt(i))
                 prompt = self.create_prompt(i)
                 previous_logs = self.load_logs()
                 complete_prompt = f"Previous Logs:\n {previous_logs}\nCurrent Question:\n{prompt}"
@@ -143,15 +155,23 @@ class SimulateLLMAgent:
                 # ============================================================
 
                 # シミュレーションの状態を画像として保存
+                agent_position = self.positions[i]
                 ax.clear()
-                ax.set_xlim(0, self.wall_x)
-                ax.set_ylim(0, self.wall_y)
-                ax.scatter(self.positions[:, 0], self.positions[:, 1], color='blue')
-                ax.scatter(self.target[0], self.target[1], color='red', s=100)
+
+                # 境界を考慮して範囲を調整
+                x_min = max(agent_position[0] - 50, 0)
+                x_max = min(agent_position[0] + 50, self.wall_x)
+                y_min = max(agent_position[1] - 50, 0)
+                y_max = min(agent_position[1] + 50, self.wall_y)
+
+                ax.set_xlim(x_min, x_max)
+                ax.set_ylim(y_min, y_max)
+
+                ax.scatter(self.positions[:, 0], self.positions[:, 1], color='blue', s=adjusted_size)
+                ax.scatter(self.target[0], self.target[1], color='red', s=adjusted_size * 2)
                 for start, end in self.obstacles:
                     ax.plot([start[0], end[0]], [start[1], end[1]], color="green")
                 plt.savefig("current_state.png")
-
                 # ============================================================
                 # Hugging faceのLlama3とSigLip，事前学習済みProjection Layerを用いたマルチモーダル
                 # direction = self.get_output.answer_question(image_path="current_state.png", prompt=prompt)
@@ -160,22 +180,22 @@ class SimulateLLMAgent:
 
                 # ============================================================
                 # Llavaによるテキスト質問と画像入力のマルチモーダル
-
+                direction = self.llm_model.get_output(prompt=complete_prompt, image="current_state.png")
                 # ============================================================
 
-                # self.add_log(f"user: {prompt}\n")
-                # self.add_log(f"AI(You): {direction}\n\n\n\n")
+                self.add_log(f"user: {prompt}\n")
+                self.add_log(f"AI(You): {direction}\n\n\n\n")
                 # print("wow", direction)
 
             if direction:  # 空でない場合のみ処理を行う
                 original_position = self.positions[i].copy()
-                if 'up' in direction and self.positions[i][1] < self.wall_y:
+                if ('up' in direction or 'Up' in direction) and self.positions[i][1] < self.wall_y:
                     self.positions[i][1] = min(self.positions[i][1] + self.dt, self.wall_y)
-                elif 'down' in direction and self.positions[i][1] > 0:
+                elif ('down' in direction or 'Down' in direction) and self.positions[i][1] > 0:
                     self.positions[i][1] = max(self.positions[i][1] - self.dt, 0)
-                elif 'left' in direction and self.positions[i][0] > 0:
+                elif ('left' in direction or 'Left' in direction) and self.positions[i][0] > 0:
                     self.positions[i][0] = max(self.positions[i][0] - self.dt, 0)
-                elif 'right' in direction and self.positions[i][0] < self.wall_x:
+                elif ('right' in direction or 'Right' in direction) and self.positions[i][0] < self.wall_x:
                     self.positions[i][0] = min(self.positions[i][0] + self.dt, self.wall_x)
 
                 # 衝突チェック
@@ -192,18 +212,19 @@ class SimulateLLMAgent:
                     if self.no_change_counter[i] >= 2:  # n回の座標移動なし
                         previous_direction = self.previous_direction[i]
                         reason_prompt = (
-                            f"The agent's position has not changed for {self.no_change_counter[i]} updates. "
-                            f"Previous direction: {previous_direction}. "
-                            # f"Current environment: {obstacles_list}\n"  # ここ後で画像に置き換える
+                            f"The agent's position has not changed for {self.no_change_counter[i]} updates.\n"
+                            f"Previous direction: {previous_direction}.\n"
                             "Why didn't the position change? Respond with a reason."
                         )
+                        previous_logs = self.load_logs()
+                        complete_prompt = f"Previous Logs:\n {previous_logs}\nCurrent Question:\n{reason_prompt}"
                         # ============================================================
                         # 理由を聞く仕組みをここに作る
-
+                        reason = self.llm_model.get_output(reason_prompt, image="current_state.png")
                         # ============================================================
 
-                        # self.add_log(f"user: {reason_prompt}\n")
-                        # self.add_log(f"AI(You): {reason}\n\n\n\n")
+                        self.add_log(f"user: {reason_prompt}\n")
+                        self.add_log(f"AI(You): {reason}\n\n\n\n")
                         self.no_change_counter[i] = 0  # カウンタをリセット
 
                 self.previous_direction[i] = direction  # 前回の方向を記録
@@ -237,9 +258,9 @@ class SimulateLLMAgent:
         self.log(self.replay_file, f"Target position: {self.target}")
         self.log(self.replay_file, f"Obstacles: {self.obstacles}")
         while not self.exit_simulation:
-            ax.clear()
             # self.__start_paint()
             self.update_position_based_on_prompt(ax)
+            ax.clear()
             ax.set_xlim(0, self.wall_x)
             ax.set_ylim(0, self.wall_y)
             # Draw agents
@@ -266,9 +287,9 @@ class SimulateLLMAgent:
         with open(self.replay_file, "r") as log_file:
             log_data = log_file.readlines()
 
-        # eval() -> 文字列をnumpyに変換
-        # .split(":")[1]指定した文字列で分割して二番目の要素を取得
-        # .strip() -> 空白を取り除く
+        # eval() : 文字列をnumpyに変換
+        # .split(":")[1] : 指定した文字列で分割して二番目の要素を取得
+        # .strip() : 空白を取り除く
         initial_positions = eval(log_data[0].split(":")[1].strip())
         target_position = eval(log_data[1].split(":")[1].strip())
         obstacles = eval(log_data[2].split(":")[1].strip())

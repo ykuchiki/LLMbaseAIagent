@@ -1,1 +1,3 @@
 
+initialize_models function took 19.050772428512573 seconds
+load_projection_module function took 0.6034917831420898 seconds

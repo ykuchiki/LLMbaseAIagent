@@ -17,7 +17,7 @@ from transformers import (
 filename = "time.txt"
 checkfile = "check.txt"
 
-class GetOutput:
+class Llama3_SigLip:
     def __init__(self, prompt):
         self.prompt = prompt
         self.tokenizer, self.model, self.vision_model, self.processor = self.initialize_models()
