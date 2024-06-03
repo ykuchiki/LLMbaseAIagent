@@ -40,6 +40,9 @@ class SimulateLLMAgent:
         with open(self.log_conversation, 'w') as log_file:
             log_file.write('')
 
+        with open(self.replay_file, 'w') as log_file:
+            log_file.write('')
+
         print("SimulateLLMAgent initialized.")
 
     def log(self, filename, message):
@@ -116,6 +119,7 @@ class SimulateLLMAgent:
         return (
             "You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:\n"
             "- The agent must reach the target.\n"
+            "- As long as this conversation continues, the agent you control must continue to face the target."
             "- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.\n"
             "- Avoid any obstacles in the nearby area.\n"
             "- The agent's color is blue, the target's color is red, and obstacles' color is green.\n"
@@ -164,6 +168,21 @@ class SimulateLLMAgent:
                 y_min = max(agent_position[1] - 50, 0)
                 y_max = min(agent_position[1] + 50, self.wall_y)
 
+                # 境界にエージェントがある場合に中心にする
+                if agent_position[0] < 50:
+                    x_min = 0
+                    x_max = 100
+                elif agent_position[0] > self.wall_x - 50:
+                    x_min = self.wall_x - 100
+                    x_max = self.wall_x
+
+                if agent_position[1] < 50:
+                    y_min = 0
+                    y_max = 100
+                elif agent_position[1] > self.wall_y - 50:
+                    y_min = self.wall_y - 100
+                    y_max = self.wall_y
+
                 ax.set_xlim(x_min, x_max)
                 ax.set_ylim(y_min, y_max)
 
@@ -209,7 +228,7 @@ class SimulateLLMAgent:
                 if np.array_equal(self.positions[i], original_position) and self.control_mode == "LLM":
                     print("no change counter:", self.no_change_counter)
                     self.no_change_counter[i] += 1
-                    if self.no_change_counter[i] >= 2:  # n回の座標移動なし
+                    if self.no_change_counter[i] >= 1:  # n回の座標移動なし
                         previous_direction = self.previous_direction[i]
                         reason_prompt = (
                             f"The agent's position has not changed for {self.no_change_counter[i]} updates.\n"
@@ -220,7 +239,7 @@ class SimulateLLMAgent:
                         complete_prompt = f"Previous Logs:\n {previous_logs}\nCurrent Question:\n{reason_prompt}"
                         # ============================================================
                         # 理由を聞く仕組みをここに作る
-                        reason = self.llm_model.get_output(reason_prompt, image="current_state.png")
+                        reason = self.llm_model.get_output(complete_prompt, image="current_state.png")
                         # ============================================================
 
                         self.add_log(f"user: {reason_prompt}\n")
