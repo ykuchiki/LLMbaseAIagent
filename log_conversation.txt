@@ -1,70 +1,60 @@
-user: You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:
-- The agent must reach the target.
-- As long as this conversation continues, the agent you control must continue to face the target.- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.
-- Avoid any obstacles in the nearby area.
+user: The image are described as follows:
 - The agent's color is blue, the target's color is red, and obstacles' color is green.
-- Don't get too close to obstacles
-- Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target.
-Current position: (x, y) = (90.00, 5.00)
-Target position: (x, y) = (150.00, 150.00)
-Choose one word: 'up', 'down', 'left', or 'right'.
-AI(You):  Right 
+- Note that the image represents your surroundings and is not a graph.
 
-
-
-user: You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:
+You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:
 - The agent must reach the target.
-- As long as this conversation continues, the agent you control must continue to face the target.- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.
+- As long as this conversation continues, the agent you control must continue to face the target.
+- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.
 - Avoid any obstacles in the nearby area.
-- The agent's color is blue, the target's color is red, and obstacles' color is green.
-- Don't get too close to obstacles
+- The given coordinates are in the format (x, y), where the x-coordinate increases as you move to the right, and the y-coordinate increases as you move upward. 
 - Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target.
-Current position: (x, y) = (95.00, 5.00)
+- Directions 'up', 'down', 'right', or 'left' are fixed relative to the image, not relative to the agent's current orientation.
+Agent position: (x, y) = (220.02, 137.12)
 Target position: (x, y) = (150.00, 150.00)
+
 Choose one word: 'up', 'down', 'left', or 'right'.
-AI(You):  Right 
+AI(You):  Left 
 
 
 
-user: You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:
+user: The image are described as follows:
+- The agent's color is blue, the target's color is red, and obstacles' color is green.
+- Note that the image represents your surroundings and is not a graph.
+
+You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:
 - The agent must reach the target.
-- As long as this conversation continues, the agent you control must continue to face the target.- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.
+- As long as this conversation continues, the agent you control must continue to face the target.
+- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.
 - Avoid any obstacles in the nearby area.
-- The agent's color is blue, the target's color is red, and obstacles' color is green.
-- Don't get too close to obstacles
+- The given coordinates are in the format (x, y), where the x-coordinate increases as you move to the right, and the y-coordinate increases as you move upward. 
 - Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target.
-Current position: (x, y) = (100.00, 5.00)
+- Directions 'up', 'down', 'right', or 'left' are fixed relative to the image, not relative to the agent's current orientation.
+Agent position: (x, y) = (215.02, 137.12)
 Target position: (x, y) = (150.00, 150.00)
+
 Choose one word: 'up', 'down', 'left', or 'right'.
-AI(You):  Right 
+AI(You):  Left 
 
 
 
-user: You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:
+user: The image are described as follows:
+- The agent's color is blue, the target's color is red, and obstacles' color is green.
+- Note that the image represents your surroundings and is not a graph.
+
+You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:
 - The agent must reach the target.
-- As long as this conversation continues, the agent you control must continue to face the target.- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.
+- As long as this conversation continues, the agent you control must continue to face the target.
+- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.
 - Avoid any obstacles in the nearby area.
-- The agent's color is blue, the target's color is red, and obstacles' color is green.
-- Don't get too close to obstacles
+- The given coordinates are in the format (x, y), where the x-coordinate increases as you move to the right, and the y-coordinate increases as you move upward. 
 - Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target.
-Current position: (x, y) = (105.00, 5.00)
+- Directions 'up', 'down', 'right', or 'left' are fixed relative to the image, not relative to the agent's current orientation.
+Agent position: (x, y) = (210.02, 137.12)
 Target position: (x, y) = (150.00, 150.00)
+
 Choose one word: 'up', 'down', 'left', or 'right'.
-AI(You):  Right 
-
-
-
-user: You are responsible for determining the direction an agent should move based on its current position and the target position. Follow these guidelines:
-- The agent must reach the target.
-- As long as this conversation continues, the agent you control must continue to face the target.- Respond with a single word: 'up', 'down', 'right', or 'left'. Do not use punctuation or extra explanations.
-- Avoid any obstacles in the nearby area.
-- The agent's color is blue, the target's color is red, and obstacles' color is green.
-- Don't get too close to obstacles
-- Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target.
-Current position: (x, y) = (110.00, 5.00)
-Target position: (x, y) = (150.00, 150.00)
-Choose one word: 'up', 'down', 'left', or 'right'.
-AI(You):  Right 
+AI(You):  Left 
 
 
 

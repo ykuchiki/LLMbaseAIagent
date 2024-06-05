@@ -24,7 +24,7 @@ class people_flow1:
         self.log_length = log_length * 2
         self.logs = []
         self.log_conversation = "log_conversation.txt"
-        self.log_prompt = "log_prompt.txt"
+        self.log_prompt = "log_reason.txt"
         self.no_change_counter = {i: 0 for i in range(people_num)}  # 位置が変わらなかった回数をカウント
         self.previous_direction = {i: None for i in range(people_num)}  # 各エージェントの前回の方向を記録
 
