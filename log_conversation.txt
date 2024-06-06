@@ -10,7 +10,7 @@ You are responsible for determining the direction an agent should move based on 
 - The given coordinates are in the format (x, y), where the x-coordinate increases as you move to the right, and the y-coordinate increases as you move upward. 
 - Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target.
 - Directions 'up', 'down', 'right', or 'left' are fixed relative to the image, not relative to the agent's current orientation.
-Agent position: (x, y) = (200.02, 152.12)
+Agent position: (x, y) = (221.87, 300.00)
 Target position: (x, y) = (150.00, 150.00)
 
 Choose one word: 'up', 'down', 'left', or 'right'.
@@ -30,11 +30,11 @@ You are responsible for determining the direction an agent should move based on 
 - The given coordinates are in the format (x, y), where the x-coordinate increases as you move to the right, and the y-coordinate increases as you move upward. 
 - Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target.
 - Directions 'up', 'down', 'right', or 'left' are fixed relative to the image, not relative to the agent's current orientation.
-Agent position: (x, y) = (205.02, 152.12)
+Agent position: (x, y) = (226.87, 300.00)
 Target position: (x, y) = (150.00, 150.00)
 
 Choose one word: 'up', 'down', 'left', or 'right'.
-AI(You):  Up 
+AI(You):  Right 
 
 
 
@@ -50,11 +50,11 @@ You are responsible for determining the direction an agent should move based on 
 - The given coordinates are in the format (x, y), where the x-coordinate increases as you move to the right, and the y-coordinate increases as you move upward. 
 - Path Planning: Consider the obstacles in the path and choose the direction that avoids them while still progressing towards the target.
 - Directions 'up', 'down', 'right', or 'left' are fixed relative to the image, not relative to the agent's current orientation.
-Agent position: (x, y) = (205.02, 157.12)
+Agent position: (x, y) = (231.87, 300.00)
 Target position: (x, y) = (150.00, 150.00)
 
 Choose one word: 'up', 'down', 'left', or 'right'.
-AI(You):  Left 
+AI(You):  Right 
 
 
 

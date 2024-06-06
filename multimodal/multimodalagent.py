@@ -16,7 +16,7 @@ client = Groq(
 
 
 class SimulateLLMAgent:
-    def __init__(self, people_num, wall_x, wall_y, dt, obstacle_num=3, log_length=1, replay_mode=False):
+    def __init__(self, people_num, wall_x, wall_y, dt, obstacle_num=3, log_length=1):
         print("Initializing SimulateLLMAgent...")
         self.people_num = people_num
         self.wall_x = wall_x
@@ -28,12 +28,11 @@ class SimulateLLMAgent:
         self.user_controlled_agent = 0  # 入力で操作するエージェントのインデックス
         self.direction = None  # ユーザーの入力方向
         self.control_mode = "manual"  # 制御モード LLM or manual
-        self.check_reason_mode = True  # 理由詳細モード
-        self.replay_mode = replay_mode  # リプレイモード
+        self.check_reason_mode = False  # 理由詳細モード
         self.exit_simulation = False
         self.llm_model = Llava()
         self.log_time = "log_time.txt"
-        self.replay_file = "log_replay.txt"
+        self.log_replay = "log_replay.txt"
         self.log_length = log_length * 2
         self.logs = []
         self.log_conversation = "log_conversation.txt"
@@ -42,8 +41,6 @@ class SimulateLLMAgent:
         self.no_change_counter = {i: 0 for i in range(people_num)}  # 位置が変わらなかった回数をカウント
         self.previous_direction = {i: None for i in range(people_num)}  # 各エージェントの前回の方向を記録
 
-        if not self.replay_mode:
-            self.clear_logs()
         print("SimulateLLMAgent initialized.")
 
     def clear_logs(self):
@@ -70,6 +67,18 @@ class SimulateLLMAgent:
 
         with open(self.log_conversation, "w") as log_file:
             log_file.write("".join(self.logs))
+
+    def save_initial_state(self):
+        with open(self.log_replay, "w") as log_file:
+            log_file.write(f"Initial State:\n")
+            log_file.write(f"Target: {self.target[0]:.2f}, {self.target[1]:.2f}\n")
+            log_file.write(f"Obstacles:\n")
+            for start, end in self.obstacles:
+                log_file.write(f"{start[0]:.2f}, {start[1]:.2f}, {end[0]:.2f}, {end[1]:.2f}\n")
+
+    def save_action_log(self, action_log_entry):
+        with open(self.log_replay, "a") as log_file:
+            log_file.write(action_log_entry + "\n")
 
     def check_memory_usage(self):
         memory_info = psutil.virtual_memory()
@@ -227,17 +236,15 @@ class SimulateLLMAgent:
                 if any(self.point_to_polygon_distance(self.positions[i], np.array(obs)) < 3 for obs in self.obstacles):
                     self.positions[i] = original_position
 
-
                 if self.control_mode == "LLM":
-                    # ログに位置を記録
-                    self.log(self.replay_file, f"Agent {i} position: {self.positions[i]}")
+                    self.save_action_log(f"{i}, {self.positions[i][0]:.2f}, {self.positions[i][1]:.2f}, {direction}")
 
                 # 複数回エージェントが移動できなかった時
                 if np.array_equal(self.positions[i], original_position) and self.control_mode == "LLM":
                     print("no change counter:", self.no_change_counter)
                     self.no_change_counter[i] += 1
                     if self.no_change_counter[i] >= 1:  # n回の座標移動なし
-                        previous_direction = self.previous_direction[i]
+                        previous_direction = direction
                         reason_prompt = (
                             f"The agent's position has not changed for {self.no_change_counter[i]} updates.\n"
                             f"Previous direction: {previous_direction}.\n"
@@ -281,15 +288,14 @@ class SimulateLLMAgent:
             print("Control mode: LLM")
 
     def simulate(self):
+        self.clear_logs()
         plt.ion()
         fig, ax = plt.subplots()
         fig.canvas.mpl_connect('key_press_event', self.on_key_press)
         flag = True
         while not self.exit_simulation:
             if self.control_mode == "LLM" and flag:
-                self.log(self.replay_file, f"Initial positions: {self.positions}")
-                self.log(self.replay_file, f"Target position: {self.target}")
-                self.log(self.replay_file, f"Obstacles: {self.obstacles}")
+                self.save_initial_state()
                 flag = False
             # self.__start_paint()
             self.update_position_based_on_prompt(ax)
@@ -318,29 +324,91 @@ class SimulateLLMAgent:
         plt.close()
 
     def replay(self):
-        with open(self.replay_file, "r") as log_file:
-            log_data = log_file.readlines()
+        self.replay_start = False
+        self.replay_end = False
 
-        # eval() : 文字列をnumpyに変換
-        # .split(":")[1] : 指定した文字列で分割して二番目の要素を取得
-        # .strip() : 空白を取り除く
-        initial_positions = eval(log_data[0].split(":")[1].strip())
-        target_position = eval(log_data[1].split(":")[1].strip())
-        obstacles = eval(log_data[2].split(":")[1].strip())
+        def on_key_press_replay(event):
+            if event.key == ' ':
+                if not self.replay_start:
+                    self.replay_start = True
+                    print("Replay started")
+                elif self.replay_end:
+                    plt.close()
+                    print("Replay window closed")
 
+        try:
+            with open(self.log_replay, "r") as log_file:
+                logs = log_file.readlines()
+        except FileNotFoundError:
+            print("Replay log file not found.")
+            return
+
+        if logs[0].strip() != "Initial State:":
+            print("Invalid log file format.")
+            return
+
+        self.target = np.array([float(coord) for coord in logs[1].strip().split(": ")[1].split(", ")])
+
+        self.obstacles = []
+        obstacle_end_index = 3
+        for obstacle in logs[3:]:
+            if obstacle.strip().split(", ")[0].isdigit():  # エージェントの初期位置が始まるまで
+                break
+            start_x, start_y, end_x, end_y = map(float, obstacle.strip().split(", "))
+            self.obstacles.append((np.array([start_x, start_y]), np.array([end_x, end_y])))
+            obstacle_end_index += 1
+
+        self.positions = np.zeros((self.people_num, 2))
+        agent_start_index = obstacle_end_index
+        for log_entry in logs[agent_start_index:agent_start_index + self.people_num]:
+            i, x, y, direction = log_entry.strip().split(", ")
+            i = int(i)
+            x = float(x)
+            y = float(y)
+            self.positions[i] = [x, y]
+
+        plt.ion()
         fig, ax = plt.subplots()
+        fig.canvas.mpl_connect('key_press_event', on_key_press_replay)
+
+        # 初期状態を表示
+        ax.clear()
         ax.set_xlim(0, self.wall_x)
         ax.set_ylim(0, self.wall_y)
-        ax.scatter(initial_positions[:, 0], initial_positions[:, 1], color='blue')
-        ax.scatter(target_position[0], target_position[1], color='red', s=100)
-        for start, end in obstacles:
+        ax.scatter(self.positions[:, 0], self.positions[:, 1], color='blue')
+        ax.scatter(self.target[0], self.target[1], color='red', s=100)
+        for start, end in self.obstacles:
             ax.plot([start[0], end[0]], [start[1], end[1]], color="green")
+        plt.pause(0.05)
 
-        for line in log_data[3:]:
-            if line.startswith("Agent"):
-                agent_index = int(line.split(" ")[1])
-                position = eval(line.split(":")[1].strip())
-                ax.scatter(position[0], position[1], color='blue')
+        # スペースキーが押されるまで待機
+        while not self.replay_start:
             plt.pause(0.05)
 
-        plt.show()
+        # 再生開始
+        for log_entry in logs[agent_start_index + self.people_num:]:
+            if log_entry.strip():
+                i, x, y, direction = log_entry.strip().split(", ")
+                i = int(i)
+                x = float(x)
+                y = float(y)
+
+                self.positions[i] = [x, y]
+                ax.clear()
+                ax.set_xlim(0, self.wall_x)
+                ax.set_ylim(0, self.wall_y)
+                ax.scatter(self.positions[:, 0], self.positions[:, 1], color='blue')
+                ax.scatter(self.target[0], self.target[1], color='red', s=100)
+                for start, end in self.obstacles:
+                    ax.plot([start[0], end[0]], [start[1], end[1]], color="green")
+                plt.pause(0.05)
+
+        # 再生終了を記録
+        self.replay_end = True
+        print("Replay finished")
+
+        # ウィンドウが閉じられるまで待機
+        while self.replay_end:
+            plt.pause(0.05)
+            plt.ioff()
+            plt.close()

@@ -31,15 +31,15 @@ def main(model_name):
     if model_name == "simpleSFM":
         model = people_flow(params['people_num'], params['v_arg'], params['repul_h'], params['repul_m'], params['target'], params['R'], params['min_p'], params['p_arg'], params['wall_x'], params['wall_y'], params['in_target_d'], params['dt'], save_format=params['save_format'], save_params=params['save_params'])
     elif model_name == "llmagent":
-        model = people_flow1(params['people_num'], params['wall_x'], params['wall_y'], params['dt2'], params['obstacle_num'], log_length=5)
+        model = people_flow1(params['people_num'], params['wall_x'], params['wall_y'], params['dt2'], params['obstacle_num'], log_length=15)
     elif model_name == "multimodal":
-        model = SimulateLLMAgent(params['people_num'], params['wall_x'], params['wall_y'], params['dt2'], params['obstacle_num'], log_length=3, replay_mode=False)
+        model = SimulateLLMAgent(params['people_num'], params['wall_x'], params['wall_y'], params['dt2'], params['obstacle_num'], log_length=3)
     else:
         raise ValueError(f"Unknown model name: {model_name}")
 
     # シミュレーションの実行
-    model.simulate()
-    # model.replay()
+    # model.simulate()
+    model.replay()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the people flow simulation with different models.")

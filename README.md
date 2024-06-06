@@ -34,4 +34,6 @@ poetry run python src/main.py multimodal
 
 ## Reference
 1. [今こそ学ぶLLMベースのAIエージェント入門](https://speakerdeck.com/os1ma/imakosoxue-bullmbesunoaiezientoru-men-ji-ben-de-nasikumi-slash-kai-fa-turu-slash-you-ming-naossyalun-wen-noshao-jie)
-2. [A Survey on Large Language Model based autonomous Agents](https://arxiv.org/abs/2308.11432) ]()
+2. [A Survey on Large Language Model based autonomous Agents](https://arxiv.org/abs/2308.11432) ]
+3. [ollama API](https://github.com/ollama/ollama/blob/main/docs/api.md)
+4. [LLaVa](https://ollama.com/blog/vision-models)
